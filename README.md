@@ -1,4 +1,3 @@
-# CDD
 호기심 기반 개발 공부 
 
 ### 1.[코틀린 함수형 프로그래밍](https://github.com/hyunw9/CDD/tree/main/FPractice/src)
