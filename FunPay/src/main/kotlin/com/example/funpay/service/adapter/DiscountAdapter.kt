@@ -5,13 +5,12 @@ import org.springframework.stereotype.Component
 @Component
 class DiscountAdapter {
 
-    fun getDiscountRate(amount : Int) : Double{
-        val discountRate:Double = when(amount){
-            in 100..1000 -> 0.1
-            in 1001 .. 10000 -> 0.2
+    fun getDiscountRateV2(): (Int) -> Double = { amount ->
+        when (amount) {
+            in 100..1000 -> 0.2
+            in 1001..10000 -> 0.1
             else -> 0.0
         }
-
-        return discountRate
+        //함수를 리턴하는 함수
     }
 }

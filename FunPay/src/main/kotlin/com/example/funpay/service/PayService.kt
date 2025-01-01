@@ -1,6 +1,5 @@
 package com.example.funpay.service
 
-import com.example.funpay.controller.PayRequest
 import com.example.funpay.controller.PayRequestParams
 import com.example.funpay.controller.PayResponse
 import com.example.funpay.entity.BankTxStatus.BANK_SUCCESS
@@ -25,6 +24,9 @@ class PayService(
     @Transactional
     fun processPay(payRequestParams: PayRequestParams): PayResponse {
 
+        val discountedPayRequestParams = payRequestParams.toDiscountedRequestParams(
+            discountRateFunc = discountAdapter.getDiscountRateV2() // 할인률
+        )
         // 포인트 결제(30%)
         val pointResponse: MethodResponse = payPoint(payRequestParams.pointAmount)
 
@@ -34,11 +36,11 @@ class PayService(
         } else pointResponse
 
         val payResult = if (voucherResponse.payResult == PAY_SUCCESS) {
-            payBank(payRequestParams.bankAmount).status == BANK_SUCCESS
+            payBank(discountedPayRequestParams.bankAmount).status == BANK_SUCCESS
         } else false
 
         // 결제 생성 및 저장
-        val payment = savePayment(payRequestParams, payResult)
+        val payment = savePayment(discountedPayRequestParams, payResult)
 
         return PayResponse(
             amount = payment.amount,
@@ -49,9 +51,7 @@ class PayService(
     private fun payBank(
         bankAmount: Int
     ): BankResponse {
-        val discountRemainRate = 1 - discountAdapter.getDiscountRate(bankAmount)
-        val discountedBankRequest = (bankAmount * discountRemainRate).toInt()
-        return bankAdapter.payByBank(discountedBankRequest)
+        return bankAdapter.payByBank(bankAmount)
     }
 
     private fun savePayment(
@@ -70,29 +70,21 @@ class PayService(
     private fun payPoint(pointAmount: Int): MethodResponse {
 
         //할인 적용 (10%)
-        val discountRemainRate = 1 - discountAdapter.getDiscountRate(pointAmount)
-        val discountPointAmount = (pointAmount * discountRemainRate).toInt()
-
         val result = when {
-            discountPointAmount > 100_000 -> PAY_FAIL
+            pointAmount > 100_000 -> PAY_FAIL
             else -> PAY_SUCCESS
         }
 
-        return MethodResponse(discountPointAmount, result)
+        return MethodResponse(pointAmount, result)
     }
 
     private fun payVoucher(voucherAmount: Int): MethodResponse {
-
-        //할인 적용 (10%)
-        val discountRemainRate = 1 - discountAdapter.getDiscountRate(voucherAmount)
-        val discountPointAmount = (voucherAmount * discountRemainRate).toInt()
-
         val result = when {
-            discountPointAmount > 100_000 -> PAY_FAIL
+            voucherAmount > 100_000 -> PAY_FAIL
             else -> PAY_SUCCESS
         }
 
-        return MethodResponse(discountPointAmount, result)
+        return MethodResponse(voucherAmount, result)
     }
 
     data class MethodResponse(
