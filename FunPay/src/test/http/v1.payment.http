@@ -1,0 +1,9 @@
+### v1 payment API
+POST http://localhost:8080/v1/payment
+Content-Type: application/json
+
+{
+  "amount": 10000,
+  "productName": "따뜻한 고무장갑",
+  "merchantName": "다있소"
+}
