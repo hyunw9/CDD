@@ -12,6 +12,7 @@ import com.example.funpay.service.PayResult.PAY_SUCCESS
 import com.example.funpay.service.adapter.BankAdapter
 import com.example.funpay.service.adapter.BankAdapter.BankResponse
 import com.example.funpay.service.adapter.DiscountAdapter
+import com.example.funpay.util.CacheUtil
 import com.example.funpay.util.RetryUtil
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,13 +21,19 @@ import org.springframework.transaction.annotation.Transactional
 class PayService(
     private val paymentRepository: PaymentRepository,
     private val bankAdapter: BankAdapter,
-    private val discountAdapter: DiscountAdapter
+    private val discountAdapter: DiscountAdapter,
 ) {
+    private val discountCache = CacheUtil<Int, Double>()
+
     @Transactional
     fun processPay(payRequestParams: PayRequestParams): PayResponse {
 
         val discountedPayRequestParams = payRequestParams.toDiscountedRequestParams(
-            discountRateFunc = discountAdapter.getDiscountRateV2() // 할인률
+            discountRateFunc = { amount ->
+                discountCache.getOrLoad(amount) {
+                    discountAdapter.getDiscountRateV2(amount)
+                }
+            } // 할인률}
         )
         // 포인트 결제(30%)
         val pointResponse: MethodResponse = RetryUtil.retry {
@@ -73,7 +80,7 @@ class PayService(
     private fun payPoint(
         pointAmount: Int
     ): MethodResponse {
-        if(System.currentTimeMillis() % 2 == 0L){
+        if (System.currentTimeMillis() % 2 == 0L) {
             throw RuntimeException("랜덤 실패")
         }
         //할인 적용 (10%)
