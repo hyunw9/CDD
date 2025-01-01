@@ -27,7 +27,7 @@
 //    every { paymentRepository.save(any()) } returns dummyPayment()
 //
 //    When("결제를 처리하면") {
-//      val response = payService.processPay(dummyPayRequest())
+//      val response = paySer vice.processPay(dummyPayRequest())
 //
 //      Then("결제가 성공적으로 완료된다") {
 //        response.amount shouldBe 100
